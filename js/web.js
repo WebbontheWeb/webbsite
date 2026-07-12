@@ -10,8 +10,10 @@
   const RADIUS_JITTER = 0.06;              // ±6% ring radius per intersection
   const SAG = 0.07;                        // ring-segment slack (fraction of chord)
   const PROX_RADIUS = 120;                 // px, pointer-proximity glow
-  const STATUS_MSG = '● CONNECTING TO WEBBSONTHEWEB.COM …';
+  const STATUS_MSG = '● CONNECTING TO WEAVINGTHEWEBB.COM …';
   const SHIMMER_NODES = 4;
+  const CAPTURE_STRANDS = 3;               // strands hooking each social icon into the web
+  const CAPTURE_SPREAD = Math.PI / 3;      // ≥60° apart, so they radiate around the icon
 
   const svg = document.getElementById('web');
   const statusText = document.getElementById('status-text');
@@ -41,6 +43,12 @@
     for (const k in attrs) e.setAttribute(k, attrs[k]);
     if (cls) e.setAttribute('class', cls);
     return e;
+  }
+
+  // Smallest absolute angle between two headings (radians, 0…π)
+  function angleGap(a, b) {
+    const d = Math.abs(a - b) % (2 * Math.PI);
+    return d > Math.PI ? 2 * Math.PI - d : d;
   }
 
   // Layout-position center (ignores transforms, so hidden pre-rise
@@ -95,23 +103,33 @@
 
     // Capture strands: hook each social icon into its nearest web nodes with
     // short, gently bowed strands, so it reads as caught IN the web rather than
-    // wired to the hub by a long bare diagonal.
+    // wired to the hub by a long bare diagonal. Pick nodes greedily by distance
+    // but keep them angularly spread, so every icon is held from a few sides.
     const flatNodes = pts.flat();
     document.querySelectorAll('.node-link').forEach(link => {
       const { x: px, y: py } = centerOf(link);
-      flatNodes
-        .map(p => ({ p, d: Math.hypot(p.x - px, p.y - py) }))
-        .sort((a, b) => a.d - b.d)
-        .slice(0, 2)
-        .forEach(({ p }) => {
-          const dx = p.x - px, dy = p.y - py, len = Math.hypot(dx, dy) || 1;
-          const bow = Math.min(len * 0.12, 14);
-          const cx = (px + p.x) / 2 - (dy / len) * bow;
-          const cy = (py + p.y) / 2 + (dx / len) * bow;
-          const path = el('path', { d: `M ${px} ${py} Q ${cx} ${cy} ${p.x} ${p.y}` }, 'anchor-strand');
-          spokesG.appendChild(path);
-          proxSpokes.push({ el: path, x1: px, y1: py, x2: p.x, y2: p.y });
-        });
+      const cand = flatNodes
+        .map(p => ({ p, d: Math.hypot(p.x - px, p.y - py), a: Math.atan2(p.y - py, p.x - px) }))
+        .sort((m, n) => m.d - n.d);
+      const chosen = [];
+      for (const c of cand) {
+        if (chosen.length >= CAPTURE_STRANDS) break;
+        if (chosen.every(o => angleGap(o.a, c.a) >= CAPTURE_SPREAD)) chosen.push(c);
+      }
+      // Top up with the nearest remaining if the spread filter came up short.
+      for (const c of cand) {
+        if (chosen.length >= CAPTURE_STRANDS) break;
+        if (!chosen.includes(c)) chosen.push(c);
+      }
+      chosen.forEach(({ p }) => {
+        const dx = p.x - px, dy = p.y - py, len = Math.hypot(dx, dy) || 1;
+        const bow = Math.min(len * 0.12, 14);
+        const cx = (px + p.x) / 2 - (dy / len) * bow;
+        const cy = (py + p.y) / 2 + (dx / len) * bow;
+        const path = el('path', { d: `M ${px} ${py} Q ${cx} ${cy} ${p.x} ${p.y}` }, 'anchor-strand');
+        spokesG.appendChild(path);
+        proxSpokes.push({ el: path, x1: px, y1: py, x2: p.x, y2: p.y });
+      });
     });
 
     // Rings: slack quadratic segments between adjacent spokes
