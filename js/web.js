@@ -15,7 +15,7 @@
 
   const svg = document.getElementById('web');
   const statusText = document.getElementById('status-text');
-  const counterEl = document.getElementById('counter');
+  const yearEl = document.getElementById('year');
   const NS = 'http://www.w3.org/2000/svg';
 
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -224,18 +224,14 @@
     document.documentElement.addEventListener('pointerleave', () => { mx = my = -1e4; queue(); });
   }
 
-  // ---- Visitor counter (fake but fun) ---------------------------
-  function initCounter() {
-    const day = Math.floor(Date.now() / 864e5);
-    let visits = 4371 + ((day * 37) % 31337);
-    const show = () => { counterEl.textContent = String(visits).padStart(7, '0'); };
-    show();
-    if (!reducedMotion) setTimeout(() => { visits++; show(); }, 4000);
+  // ---- Footer year -----------------------------------------------
+  function setYear() {
+    yearEl.textContent = new Date().getFullYear();
   }
 
   // ---- Boot ------------------------------------------------------
   function boot() {
-    initCounter();
+    setYear();
     if (reducedMotion) {
       finish();
     } else {

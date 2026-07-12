@@ -208,8 +208,8 @@ footer {
   color: var(--strand);
 }
 
-.visitors { color: var(--strand); }
-.counter-digits { color: var(--amber); }
+.copyright { color: var(--strand); }
+.tagline { color: var(--amber); }
 .footer-sep { color: var(--strand); }
 
 /* ---------------- Focus visibility ---------------- */
