@@ -43,8 +43,7 @@ body {
 }
 
 #web .spoke,
-#web .ring-seg,
-#web .anchor-strand {
+#web .ring-seg {
   stroke: var(--strand);
   stroke-width: 1;
   fill: none;

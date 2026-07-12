@@ -12,8 +12,6 @@
   const PROX_RADIUS = 120;                 // px, pointer-proximity glow
   const STATUS_MSG = '● CONNECTING TO WEAVINGTHEWEBB.COM …';
   const SHIMMER_NODES = 4;
-  const CAPTURE_STRANDS = 3;               // strands hooking each social icon into the web
-  const CAPTURE_SPREAD = Math.PI / 3;      // ≥60° apart, so they radiate around the icon
 
   const svg = document.getElementById('web');
   const statusText = document.getElementById('status-text');
@@ -43,20 +41,6 @@
     for (const k in attrs) e.setAttribute(k, attrs[k]);
     if (cls) e.setAttribute('class', cls);
     return e;
-  }
-
-  // Smallest absolute angle between two headings (radians, 0…π)
-  function angleGap(a, b) {
-    const d = Math.abs(a - b) % (2 * Math.PI);
-    return d > Math.PI ? 2 * Math.PI - d : d;
-  }
-
-  // Layout-position center (ignores transforms, so hidden pre-rise
-  // content still yields its final resting position)
-  function centerOf(elm) {
-    let x = elm.offsetWidth / 2, y = elm.offsetHeight / 2;
-    for (let n = elm; n; n = n.offsetParent) { x += n.offsetLeft; y += n.offsetTop; }
-    return { x, y };
   }
 
   // ---- Geometry ------------------------------------------------
@@ -99,37 +83,6 @@
       const line = el('line', { x1: hub.x, y1: hub.y, x2, y2 }, 'spoke');
       spokesG.appendChild(line);
       proxSpokes.push({ el: line, x1: hub.x, y1: hub.y, x2, y2 });
-    });
-
-    // Capture strands: hook each social icon into its nearest web nodes with
-    // short, gently bowed strands, so it reads as caught IN the web rather than
-    // wired to the hub by a long bare diagonal. Pick nodes greedily by distance
-    // but keep them angularly spread, so every icon is held from a few sides.
-    const flatNodes = pts.flat();
-    document.querySelectorAll('.node-link').forEach(link => {
-      const { x: px, y: py } = centerOf(link);
-      const cand = flatNodes
-        .map(p => ({ p, d: Math.hypot(p.x - px, p.y - py), a: Math.atan2(p.y - py, p.x - px) }))
-        .sort((m, n) => m.d - n.d);
-      const chosen = [];
-      for (const c of cand) {
-        if (chosen.length >= CAPTURE_STRANDS) break;
-        if (chosen.every(o => angleGap(o.a, c.a) >= CAPTURE_SPREAD)) chosen.push(c);
-      }
-      // Top up with the nearest remaining if the spread filter came up short.
-      for (const c of cand) {
-        if (chosen.length >= CAPTURE_STRANDS) break;
-        if (!chosen.includes(c)) chosen.push(c);
-      }
-      chosen.forEach(({ p }) => {
-        const dx = p.x - px, dy = p.y - py, len = Math.hypot(dx, dy) || 1;
-        const bow = Math.min(len * 0.12, 14);
-        const cx = (px + p.x) / 2 - (dy / len) * bow;
-        const cy = (py + p.y) / 2 + (dx / len) * bow;
-        const path = el('path', { d: `M ${px} ${py} Q ${cx} ${cy} ${p.x} ${p.y}` }, 'anchor-strand');
-        spokesG.appendChild(path);
-        proxSpokes.push({ el: path, x1: px, y1: py, x2: p.x, y2: p.y });
-      });
     });
 
     // Rings: slack quadratic segments between adjacent spokes
@@ -299,14 +252,9 @@
     resizeTimer = setTimeout(() => { if (state.done) rebuildFinal(); else finish(); }, 150);
   });
 
-  // Wait briefly for VT323 so icon positions are final before strands route to them
-  const ready = Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 250))]);
-  // Re-route anchors if the webfont lands after boot and shifts layout
-  document.fonts.ready.then(() => { if (state.done) rebuildFinal(); });
-
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => ready.then(boot));
+    document.addEventListener('DOMContentLoaded', boot);
   } else {
-    ready.then(boot);
+    boot();
   }
 })();
