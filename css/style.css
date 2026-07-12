@@ -127,8 +127,9 @@ h1 .webb {
   transition: color 0.25s ease, text-decoration-color 0.25s ease;
 }
 
-h1:hover .webb,
-h1 .webb:active {
+.webb:hover,
+.webb:focus-visible,
+.webb:active {
   color: var(--visited-purple);
   text-decoration-color: var(--visited-purple);
 }
