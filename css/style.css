@@ -1,0 +1,249 @@
+/* ================================================================
+   The Webbsite — design tokens & styles
+   ================================================================ */
+
+:root {
+  --ink: #0B0E1A;            /* page background */
+  --strand: #2E3A5C;         /* web strands at rest */
+  --node: #7B8CDE;           /* node dots at rest */
+  --link-blue: #4D6BFF;      /* primary accent (hyperlink blue) */
+  --visited-purple: #9B6BD3; /* secondary accent (visited purple) */
+  --phosphor: #E8ECF8;       /* primary text */
+  --amber: #FFB454;          /* status bar / counter digits */
+
+  --font-display: "Times New Roman", Times, serif;
+  --font-retro: "VT323", "Courier New", monospace;
+  --font-body: Verdana, Geneva, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { height: 100%; }
+
+body {
+  min-height: 100svh;
+  background: var(--ink);
+  color: var(--phosphor);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.7;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+/* ---------------- Background web ---------------- */
+
+#web {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+}
+
+#web .spoke,
+#web .ring-seg,
+#web .anchor-strand {
+  stroke: var(--strand);
+  stroke-width: 1;
+  fill: none;
+  transition: stroke 0.3s ease, opacity 0.3s ease;
+}
+
+#web .web-node {
+  fill: var(--node);
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: fill 0.3s ease, opacity 0.3s ease;
+}
+
+#web .prox { stroke: var(--link-blue); }
+#web circle.prox { fill: var(--link-blue); stroke: none; }
+
+#web .shimmer { animation: shimmer 7s ease-in-out infinite; }
+
+@keyframes shimmer {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* ---------------- Status line ---------------- */
+
+.status-line {
+  position: fixed;
+  top: 14px;
+  left: 16px;
+  font-family: var(--font-retro);
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  color: var(--amber);
+  z-index: 2;
+}
+
+.cursor {
+  display: inline-block;
+  margin-left: 2px;
+  animation: blink 1.1s steps(2, start) infinite;
+}
+
+@keyframes blink { to { visibility: hidden; } }
+
+/* ---------------- Hero ---------------- */
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 5rem 1.25rem 4rem;
+}
+
+.eyebrow {
+  font-family: var(--font-retro);
+  font-size: clamp(0.85rem, 2.2vw, 1.1rem);
+  letter-spacing: 0.28em;
+  color: var(--visited-purple);
+  margin-bottom: 1rem;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 10vw, 7rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: var(--phosphor);
+  text-wrap: balance;
+}
+
+h1 .webb {
+  color: var(--link-blue);
+  text-decoration: underline;
+  text-decoration-color: var(--link-blue);
+  text-decoration-thickness: 0.045em;
+  text-underline-offset: 0.09em;
+  transition: color 0.25s ease, text-decoration-color 0.25s ease;
+}
+
+h1:hover .webb,
+h1 .webb:active {
+  color: var(--visited-purple);
+  text-decoration-color: var(--visited-purple);
+}
+
+.subheader {
+  font-family: var(--font-retro);
+  font-size: clamp(1.1rem, 3vw, 1.6rem);
+  letter-spacing: 0.3em;
+  text-indent: 0.3em; /* re-center: letter-spacing adds a trailing gap */
+  color: var(--phosphor);
+  margin-top: 1.25rem;
+}
+
+/* ---------------- Social nodes ---------------- */
+
+nav {
+  display: flex;
+  gap: clamp(1.5rem, 6vw, 3rem);
+  margin-top: 3rem;
+}
+
+.node-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--strand);
+  background: var(--ink);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.node-link svg {
+  width: 20px;
+  height: 20px;
+  fill: var(--node);
+  transition: fill 0.25s ease;
+}
+
+.node-link .node-label {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-retro);
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  color: var(--link-blue);
+  opacity: 0;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.node-link:hover,
+.node-link:focus-visible {
+  border-color: var(--link-blue);
+  box-shadow: 0 0 12px rgba(77, 107, 255, 0.55);
+}
+
+.node-link:hover svg,
+.node-link:focus-visible svg { fill: var(--link-blue); }
+
+.node-link:hover .node-label,
+.node-link:focus-visible .node-label { opacity: 1; }
+
+/* ---------------- Footer ---------------- */
+
+footer {
+  padding: 0.9rem 16px;
+  font-family: var(--font-retro);
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  color: var(--strand);
+}
+
+.visitors { color: var(--strand); }
+.counter-digits { color: var(--amber); }
+.footer-sep { color: var(--strand); }
+
+/* ---------------- Focus visibility ---------------- */
+
+:focus-visible {
+  outline: 2px solid var(--link-blue);
+  outline-offset: 3px;
+}
+
+/* ---------------- Load sequence (content rise) ----------------
+   Content is hidden only when JS is available to reveal it. */
+
+html.js .rise {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+html.js body.loaded .rise {
+  opacity: 1;
+  transform: none;
+}
+
+html.js body.loaded .rise:nth-child(2) { transition-delay: 0.08s; }
+html.js body.loaded .rise:nth-child(3) { transition-delay: 0.16s; }
+html.js body.loaded .rise:nth-child(4) { transition-delay: 0.24s; }
+
+/* ---------------- Reduced motion ---------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .cursor { animation: none !important; visibility: visible; }
+  html.js .rise { opacity: 1; transform: none; }
+}
