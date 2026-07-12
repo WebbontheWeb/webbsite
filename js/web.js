@@ -93,12 +93,25 @@
       proxSpokes.push({ el: line, x1: hub.x, y1: hub.y, x2, y2 });
     });
 
-    // Anchor strands: hub → each social icon (icons are nodes IN the web)
+    // Capture strands: hook each social icon into its nearest web nodes with
+    // short, gently bowed strands, so it reads as caught IN the web rather than
+    // wired to the hub by a long bare diagonal.
+    const flatNodes = pts.flat();
     document.querySelectorAll('.node-link').forEach(link => {
-      const { x: x2, y: y2 } = centerOf(link);
-      const line = el('line', { x1: hub.x, y1: hub.y, x2, y2 }, 'spoke anchor-strand');
-      spokesG.appendChild(line);
-      proxSpokes.push({ el: line, x1: hub.x, y1: hub.y, x2, y2 });
+      const { x: px, y: py } = centerOf(link);
+      flatNodes
+        .map(p => ({ p, d: Math.hypot(p.x - px, p.y - py) }))
+        .sort((a, b) => a.d - b.d)
+        .slice(0, 2)
+        .forEach(({ p }) => {
+          const dx = p.x - px, dy = p.y - py, len = Math.hypot(dx, dy) || 1;
+          const bow = Math.min(len * 0.12, 14);
+          const cx = (px + p.x) / 2 - (dy / len) * bow;
+          const cy = (py + p.y) / 2 + (dx / len) * bow;
+          const path = el('path', { d: `M ${px} ${py} Q ${cx} ${cy} ${p.x} ${p.y}` }, 'anchor-strand');
+          spokesG.appendChild(path);
+          proxSpokes.push({ el: path, x1: px, y1: py, x2: p.x, y2: p.y });
+        });
     });
 
     // Rings: slack quadratic segments between adjacent spokes
