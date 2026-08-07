@@ -4,16 +4,21 @@
 
 :root {
   --ink: #0B0E1A;            /* page background */
-  --strand: #2E3A5C;         /* web strands at rest */
+  --strand: #2E3A5C;         /* web strands at rest — 1px lines only, never text */
+  --strand-text: #7C8CB8;    /* quietest legible text on --ink (5.77:1) */
   --node: #7B8CDE;           /* node dots at rest */
-  --link-blue: #4D6BFF;      /* primary accent (hyperlink blue) */
-  --visited-purple: #9B6BD3; /* secondary accent (visited purple) */
+  --link-blue: #4D6BFF;      /* primary accent — display + 1px strokes */
+  --link-blue-text: #6B84FF; /* same accent, lifted for small text (5.83:1) */
+  --visited-purple: #9B6BD3; /* secondary accent — followed links */
   --phosphor: #E8ECF8;       /* primary text */
-  --amber: #FFB454;          /* status bar / counter digits */
+  --amber: #FFB454;          /* the one warm note, spent on the sign-off */
 
+  /* Two families, two jobs. Display carries the voice; UI carries everything
+     small. Both are system stacks — the page loads no webfonts at all. */
   --font-display: "Times New Roman", Times, serif;
-  --font-retro: "VT323", "Courier New", monospace;
-  --font-body: Verdana, Geneva, sans-serif;
+  --font-ui: Verdana, Geneva, Tahoma, sans-serif;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,7 +29,7 @@ body {
   min-height: 100svh;
   background: var(--ink);
   color: var(--phosphor);
-  font-family: var(--font-body);
+  font-family: var(--font-ui);
   font-size: 15px;
   line-height: 1.7;
   display: flex;
@@ -67,27 +72,6 @@ body {
   50% { opacity: 0.35; }
 }
 
-/* ---------------- Status line ---------------- */
-
-.status-line {
-  position: fixed;
-  top: 14px;
-  left: 16px;
-  font-family: var(--font-retro);
-  font-size: 14px;
-  letter-spacing: 0.05em;
-  color: var(--amber);
-  z-index: 2;
-}
-
-.cursor {
-  display: inline-block;
-  margin-left: 2px;
-  animation: blink 1.1s steps(2, start) infinite;
-}
-
-@keyframes blink { to { visibility: hidden; } }
-
 /* ---------------- Hero ---------------- */
 
 main {
@@ -100,14 +84,6 @@ main {
   padding: 5rem 1.25rem 4rem;
 }
 
-.eyebrow {
-  font-family: var(--font-retro);
-  font-size: clamp(0.85rem, 2.2vw, 1.1rem);
-  letter-spacing: 0.28em;
-  color: var(--visited-purple);
-  margin-bottom: 1rem;
-}
-
 h1 {
   font-family: var(--font-display);
   font-size: clamp(3rem, 10vw, 7rem);
@@ -118,29 +94,28 @@ h1 {
   text-wrap: balance;
 }
 
+/* Styled as a hyperlink, deliberately not one. The reference is the joke;
+   the destination lives in the nav below, where visitors expect it. */
 h1 .webb {
   color: var(--link-blue);
   text-decoration: underline;
   text-decoration-color: var(--link-blue);
   text-decoration-thickness: 0.045em;
   text-underline-offset: 0.09em;
-  transition: color 0.25s ease, text-decoration-color 0.25s ease;
 }
 
-.webb:hover,
-.webb:focus-visible,
-.webb:active {
-  color: var(--visited-purple);
-  text-decoration-color: var(--visited-purple);
-}
-
+/* Identity caption. Separated from the display by family, case, size and
+   tracking — four axes, so it never reads as a smaller headline. */
 .subheader {
-  font-family: var(--font-retro);
-  font-size: clamp(1.1rem, 3vw, 1.6rem);
-  letter-spacing: 0.3em;
-  text-indent: 0.3em; /* re-center: letter-spacing adds a trailing gap */
+  font-family: var(--font-ui);
+  font-size: clamp(0.8125rem, 1.8vw, 0.9375rem);
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-indent: 0.22em; /* re-center: letter-spacing adds a trailing gap */
+  text-transform: uppercase;
+  line-height: 1.4;
   color: var(--phosphor);
-  margin-top: 1.25rem;
+  margin-top: 1.5rem;
 }
 
 /* ---------------- Social nodes ---------------- */
@@ -161,7 +136,7 @@ nav {
   border-radius: 50%;
   border: 1px solid var(--strand);
   background: var(--ink);
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
 }
 
 .node-link svg {
@@ -176,15 +151,20 @@ nav {
   top: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
-  font-family: var(--font-retro);
+  font-family: var(--font-ui);
   font-size: 12px;
-  letter-spacing: 0.15em;
-  color: var(--link-blue);
+  letter-spacing: 0.14em;
+  line-height: 1;
+  color: var(--link-blue-text);
   opacity: 0;
   white-space: nowrap;
   pointer-events: none;
   transition: opacity 0.25s ease;
 }
+
+/* Followed links go purple — the other half of the palette's premise.
+   :visited may only alter colour, so the ring carries it. */
+.node-link:visited { border-color: var(--visited-purple); }
 
 .node-link:hover,
 .node-link:focus-visible {
@@ -198,19 +178,25 @@ nav {
 .node-link:hover .node-label,
 .node-link:focus-visible .node-label { opacity: 1; }
 
+.node-link:active {
+  border-color: var(--link-blue);
+  background-color: rgba(77, 107, 255, 0.16);
+}
+
 /* ---------------- Footer ---------------- */
 
 footer {
   padding: 0.9rem 16px;
-  font-family: var(--font-retro);
-  font-size: 13px;
-  letter-spacing: 0.05em;
-  color: var(--strand);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  line-height: 1.6;
+  color: var(--strand-text);
 }
 
-.copyright { color: var(--strand); }
+.copyright { color: var(--strand-text); }
 .tagline { color: var(--amber); }
-.footer-sep { color: var(--strand); }
+.footer-sep { color: var(--strand-text); }
 
 /* ---------------- Focus visibility ---------------- */
 
@@ -220,22 +206,29 @@ footer {
 }
 
 /* ---------------- Load sequence (content rise) ----------------
-   Content is hidden only when JS is available to reveal it. */
+   Content is hidden only when JS is available to reveal it — and even then
+   the failsafe animation below reveals it on its own if JS never arrives. */
 
 html.js .rise {
   opacity: 0;
   transform: translateY(12px);
-  transition: opacity 0.5s ease, transform 0.5s ease;
+  transition: opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out);
+  animation: rise-failsafe 0.5s var(--ease-out) 2.4s forwards;
+}
+
+@keyframes rise-failsafe {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
 }
 
 html.js body.loaded .rise {
+  animation: none;
   opacity: 1;
   transform: none;
 }
 
-html.js body.loaded .rise:nth-child(2) { transition-delay: 0.08s; }
-html.js body.loaded .rise:nth-child(3) { transition-delay: 0.16s; }
-html.js body.loaded .rise:nth-child(4) { transition-delay: 0.24s; }
+html.js body.loaded main > .rise:nth-child(2) { transition-delay: 0.07s; }
+html.js body.loaded main > .rise:nth-child(3) { transition-delay: 0.14s; }
 
 /* ---------------- Reduced motion ---------------- */
 
@@ -244,6 +237,5 @@ html.js body.loaded .rise:nth-child(4) { transition-delay: 0.24s; }
     animation: none !important;
     transition: none !important;
   }
-  .cursor { animation: none !important; visibility: visible; }
   html.js .rise { opacity: 1; transform: none; }
 }

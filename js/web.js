@@ -1,4 +1,6 @@
-/* The Webbsite — background web geometry, load sequence, proximity glow. */
+/* The Webbsite — background web geometry, load sequence, proximity glow.
+   The web is atmosphere. Nothing in this file may gate the page's content:
+   every path ends at reveal(), and style.css reveals on its own if it doesn't. */
 (() => {
   'use strict';
 
@@ -10,17 +12,17 @@
   const RADIUS_JITTER = 0.06;              // ±6% ring radius per intersection
   const SAG = 0.07;                        // ring-segment slack (fraction of chord)
   const PROX_RADIUS = 120;                 // px, pointer-proximity glow
-  const STATUS_MSG = '● CONNECTING TO WEAVINGTHEWEBB.COM …';
   const SHIMMER_NODES = 4;
+  const REVEAL_AT = 380;                   // content lands while the web is still drawing
+  const SETTLE_AT = 860;                   // web finishes weaving
 
   const svg = document.getElementById('web');
-  const statusText = document.getElementById('status-text');
   const yearEl = document.getElementById('year');
   const NS = 'http://www.w3.org/2000/svg';
 
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isMobile = () => innerWidth <= 640;
-  const SPEED = isMobile() ? 0.45 : 1;     // mobile sequence ≈ 1.2s
+  const SPEED = isMobile() ? 0.45 : 1;     // mobile sequence ≈ 390ms
 
   // mulberry32 — tiny seeded PRNG
   function prng(seed) {
@@ -33,8 +35,13 @@
     };
   }
 
-  const state = { done: false, timers: [], typer: null };
+  const state = { done: false, timers: [] };
   let proxNodes = [], proxSegs = [], proxSpokes = [];
+
+  // The one thing that must always happen, however this file exits.
+  function reveal() {
+    document.body.classList.add('loaded');
+  }
 
   function el(name, attrs, cls) {
     const e = document.createElementNS(NS, name);
@@ -112,16 +119,11 @@
     return { spokes: [...spokesG.children], rings: [...ringsG.children], nodes: [...nodesG.children], cfg };
   }
 
-  // ---- Load sequence ("dial-up handshake") ----------------------
-  const later = (fn, ms) => state.timers.push(setTimeout(fn, ms * SPEED));
-
-  function typeStatus(msg, done) {
-    let i = 0;
-    state.typer = setInterval(() => {
-      statusText.textContent = msg.slice(0, ++i);
-      if (i >= msg.length) { clearInterval(state.typer); done && done(); }
-    }, 22 * SPEED);
-  }
+  // ---- Load sequence -------------------------------------------
+  // Every deferred step is guarded: a throw inside one must not strand the page.
+  const later = (fn, ms) => state.timers.push(setTimeout(() => {
+    try { fn(); } catch (err) { console.error('web.js:', err); reveal(); }
+  }, ms * SPEED));
 
   function animateIn() {
     const parts = buildWeb();
@@ -135,34 +137,32 @@
     parts.nodes.forEach(n => { n.style.transform = 'scale(0)'; });
     svg.getBoundingClientRect(); // flush styles before transitions
 
-    typeStatus(STATUS_MSG);
-
     later(() => parts.spokes.forEach((p, i) => {
-      p.style.transition = `stroke-dashoffset ${400 * SPEED}ms ease-out ${i * 20 * SPEED}ms`;
+      p.style.transition = `stroke-dashoffset ${320 * SPEED}ms ease-out ${i * 12 * SPEED}ms`;
       p.style.strokeDashoffset = 0;
-    }), 350);
+    }), 40);
 
     later(() => parts.rings.forEach((p, i) => {
-      const delay = (+p.dataset.ring * 80 + (i % parts.cfg.spokes) * 6) * SPEED;
-      p.style.transition = `stroke-dashoffset ${320 * SPEED}ms ease ${delay}ms`;
+      const delay = (+p.dataset.ring * 40 + (i % parts.cfg.spokes) * 3) * SPEED;
+      p.style.transition = `stroke-dashoffset ${260 * SPEED}ms ease ${delay}ms`;
       p.style.strokeDashoffset = 0;
-    }), 800);
+    }), 260);
 
     later(() => parts.nodes.forEach((n, i) => {
-      n.style.transition = `transform ${240 * SPEED}ms cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 6 * SPEED}ms`;
+      n.style.transition = `transform ${180 * SPEED}ms cubic-bezier(0.16, 1, 0.3, 1) ${i * 2 * SPEED}ms`;
       n.style.transform = 'scale(1)';
-    }), 1400);
+    }), 480);
 
-    later(() => { statusText.textContent = STATUS_MSG + ' OK'; }, 1800);
-    later(finish, 1850);
+    // Content arrives before the web settles — the payload never waits on the atmosphere.
+    later(reveal, REVEAL_AT);
+    later(finish, SETTLE_AT);
   }
 
   function finish() {
     if (state.done) return;
     state.done = true;
     state.timers.forEach(clearTimeout);
-    clearInterval(state.typer);
-    if (svg.childElementCount) {
+    if (svg && svg.childElementCount) {
       // Web already built (animation ran): snap in-flight styles to final state
       const els = svg.querySelectorAll('.spoke, .ring-seg, .web-node');
       els.forEach(p => {
@@ -174,11 +174,10 @@
       svg.getBoundingClientRect(); // commit the snap before re-enabling transitions
       els.forEach(p => { p.style.transition = ''; });
       if (!reducedMotion) startShimmer();
-    } else {
+    } else if (svg) {
       rebuildFinal(); // reduced-motion path: nothing built yet
     }
-    statusText.textContent = reducedMotion ? 'CONNECTED' : STATUS_MSG + ' OK';
-    document.body.classList.add('loaded');
+    reveal();
     removeEventListener('pointerdown', finish);
     removeEventListener('keydown', finish);
   }
@@ -226,26 +225,39 @@
 
   // ---- Footer year -----------------------------------------------
   function setYear() {
-    yearEl.textContent = new Date().getFullYear();
+    if (yearEl) yearEl.textContent = new Date().getFullYear();
   }
 
   // ---- Boot ------------------------------------------------------
   function boot() {
-    setYear();
-    if (reducedMotion) {
-      finish();
-    } else {
-      addEventListener('pointerdown', finish);
-      addEventListener('keydown', finish);
-      animateIn();
+    try {
+      setYear();
+      if (!svg) { reveal(); return; }
+      if (reducedMotion) {
+        finish();
+      } else {
+        addEventListener('pointerdown', finish);
+        addEventListener('keydown', finish);
+        animateIn();
+      }
+      initProximity();
+    } catch (err) {
+      // The web failed to weave. Drop it and show the page anyway.
+      console.error('web.js:', err);
+      if (svg) svg.textContent = '';
+      reveal();
     }
-    initProximity();
   }
 
   let resizeTimer;
   addEventListener('resize', () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => { if (state.done) rebuildFinal(); else finish(); }, 150);
+    resizeTimer = setTimeout(() => {
+      if (!svg) return;
+      try {
+        if (state.done) rebuildFinal(); else finish();
+      } catch (err) { console.error('web.js:', err); reveal(); }
+    }, 150);
   });
 
   if (document.readyState === 'loading') {
